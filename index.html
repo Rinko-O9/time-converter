@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>时间转换器 · Time Converter</title>
+  <link rel="stylesheet" href="style.css?v3" />
+  <style>html,body{background:#F2FBFA!important;color:#12302C!important}</style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header>
+      <div class="logo-wrap">
+        <span class="logo-icon">⏱</span>
+        <div>
+          <h1>时间转换器</h1>
+          <p class="subtitle">Time Zone Converter</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── Converter Card ── -->
+    <div class="converter-wrap">
+
+      <!-- Zone A -->
+      <div class="zone-card" id="zoneA">
+        <div class="zone-header">
+          <div class="zone-info">
+            <span class="zone-flag" id="flagA">🇨🇳</span>
+            <div>
+              <div class="zone-name">
+                <span id="nameA">上海</span>
+                <span class="zone-country" id="countryA">/ 中国</span>
+              </div>
+              <div class="zone-id-text" id="cityEnA">Shanghai / China</div>
+            </div>
+          </div>
+          <button class="btn-change" onclick="openPicker('A')">切换 ↓</button>
+        </div>
+        <div class="time-edit-row">
+          <input type="datetime-local" id="timeInputA" class="time-picker" />
+          <button class="btn-now" onclick="setNow('A')">📍 现在</button>
+        </div>
+        <div class="time-big" id="timeBigA">--:--:--</div>
+        <div class="date-line" id="dateBigA">----</div>
+        <div class="offset-chip" id="offsetA">UTC+8</div>
+      </div>
+
+      <!-- Swap button (floats between cards) -->
+      <div class="swap-center">
+        <button class="btn-swap" onclick="swapZones()" title="互换时区">
+          <span class="swap-icon">⇄</span>
+        </button>
+      </div>
+
+      <!-- Zone B -->
+      <div class="zone-card" id="zoneB">
+        <div class="zone-header">
+          <div class="zone-info">
+            <span class="zone-flag" id="flagB">🇺🇸</span>
+            <div>
+              <div class="zone-name">
+                <span id="nameB">纽约</span>
+                <span class="zone-country" id="countryB">/ 美国</span>
+              </div>
+              <div class="zone-id-text" id="cityEnB">New York / USA</div>
+            </div>
+          </div>
+          <button class="btn-change" onclick="openPicker('B')">切换 ↓</button>
+        </div>
+        <div class="time-edit-row">
+          <input type="datetime-local" id="timeInputB" class="time-picker" />
+          <button class="btn-now" onclick="setNow('B')">📍 现在</button>
+        </div>
+        <div class="time-big" id="timeBigB">--:--:--</div>
+        <div class="date-line" id="dateBigB">----</div>
+        <div class="offset-chip" id="offsetB">UTC-4</div>
+      </div>
+
+    </div>
+
+    <!-- Zone Picker Modal -->
+    <div class="picker-overlay" id="pickerOverlay" onclick="closePicker()">
+      <div class="picker-modal" onclick="event.stopPropagation()">
+        <div class="picker-header">
+          <span>选择时区</span>
+          <button class="picker-close" onclick="closePicker()">✕</button>
+        </div>
+        <div class="picker-search-wrap">
+          <span class="pi-search-icon">🔍</span>
+          <input type="text" id="pickerSearch" class="picker-search" placeholder="城市 / 国家 / City…" autocomplete="off" />
+        </div>
+        <ul id="pickerList" class="picker-list"></ul>
+      </div>
+    </div>
+
+    <!-- More zones section -->
+    <section class="more-section">
+      <div class="more-header">
+        <span class="more-title">更多时区</span>
+        <div class="add-zone-row">
+          <input type="text" id="addSearch" class="add-search" placeholder="搜索并添加…" autocomplete="off" />
+          <ul id="addSuggestions" class="add-suggestions"></ul>
+        </div>
+      </div>
+      <div id="moreResults" class="more-grid">
+        <div class="more-empty">👆 搜索城市或国家来添加更多时区</div>
+      </div>
+    </section>
+
+    <!-- Timestamp Tools -->
+    <section class="ts-section">
+      <div class="ts-title">Unix 时间戳工具</div>
+      <div class="ts-row">
+        <input type="number" id="tsInput" class="ts-input" placeholder="Unix timestamp（秒）" />
+        <button class="btn-ts" onclick="tsToTime()">→ 转日期</button>
+      </div>
+      <div class="ts-row">
+        <input type="text" id="tsDateInput" class="ts-input" placeholder="日期字符串 e.g. 2024-06-01 12:00" />
+        <button class="btn-ts" onclick="timeToTs()">→ 转时间戳</button>
+      </div>
+      <div id="tsResult" class="ts-result"></div>
+    </section>
+
+    <footer>
+      <span>建造于 pika.me</span>
+      <span class="dot">·</span>
+      <span>Pantone Green U</span>
+      <span class="dot">·</span>
+      <span>🌿</span>
+    </footer>
+
+  </div>
+
+  <script src="app.js?v3"></script>
+</body>
+</html>
