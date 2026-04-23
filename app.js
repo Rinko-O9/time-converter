@@ -219,6 +219,8 @@ function init() {
   setInterval(refreshAll, 1000);
   setupAddSearch();
   setupPickerSearch();
+  fetchWeather(zoneA.id, 'A');
+  fetchWeather(zoneB.id, 'B');
 }
 
 // ── Clock ─────────────────────────────────────────────────────────
@@ -324,7 +326,7 @@ function getOffsetStr(tzId, date) {
 function updateZoneDisplay(side, date, tzId) {
   const info = side === 'A' ? zoneA : zoneB;
   const time = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: tzId, hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    timeZone: tzId, hour:'2-digit', minute:'2-digit', hour12:false
   }).format(date);
   const dateStr = new Intl.DateTimeFormat('zh-CN', {
     timeZone: tzId, year:'numeric', month:'long', day:'numeric', weekday:'short'
@@ -401,6 +403,7 @@ function selectZone(id) {
   const aVal = document.getElementById('timeInputA').value;
   if (aVal) onTimeChange('A', aVal);
   closePicker();
+  fetchWeather(id, pickerTarget);
 }
 
 // ── More zones ─────────────────────────────────────────────────────
@@ -456,7 +459,7 @@ function buildMoreCards() {
   container.innerHTML = moreZones.map(id => {
     const info = infoFor(id);
     const d = new Date(utcMs);
-    const time = new Intl.DateTimeFormat('zh-CN',{timeZone:id,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d);
+    const time = new Intl.DateTimeFormat('zh-CN',{timeZone:id,hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
     const date = new Intl.DateTimeFormat('zh-CN',{timeZone:id,month:'short',day:'numeric',weekday:'short'}).format(d);
     const offset = getOffsetStr(id, d);
     const safeId = id.replace(/\//g,'-');
@@ -488,7 +491,7 @@ function updateMoreCards(utcMs) {
     const tEl = document.getElementById('mt-' + safeId);
     const dEl = document.getElementById('md-' + safeId);
     if (!tEl) return;
-    tEl.textContent = new Intl.DateTimeFormat('zh-CN',{timeZone:id,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d);
+    tEl.textContent = new Intl.DateTimeFormat('zh-CN',{timeZone:id,hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
     dEl.textContent = new Intl.DateTimeFormat('zh-CN',{timeZone:id,month:'short',day:'numeric',weekday:'short'}).format(d);
   });
 }
@@ -527,4 +530,106 @@ function showTs(t) {
   const el = document.getElementById('tsResult');
   el.textContent = t;
   el.classList.add('show');
+}
+
+// ── Weather ───────────────────────────────────────────────────────
+const weatherCache = {};
+
+// Coordinates map for IANA timezones (lat, lon)
+const TZ_COORDS = {
+  'Asia/Shanghai': [31.23, 121.47], 'Asia/Hong_Kong': [22.32, 114.17],
+  'Asia/Tokyo': [35.68, 139.69], 'Asia/Seoul': [37.57, 126.98],
+  'Asia/Singapore': [1.35, 103.82], 'Asia/Bangkok': [13.75, 100.52],
+  'Asia/Ho_Chi_Minh': [10.82, 106.63], 'Asia/Jakarta': [-6.21, 106.85],
+  'Asia/Kolkata': [19.08, 72.88], 'Asia/Karachi': [24.86, 67.01],
+  'Asia/Dubai': [25.2, 55.27], 'Asia/Riyadh': [24.69, 46.72],
+  'Asia/Tehran': [35.69, 51.42], 'Asia/Baghdad': [33.33, 44.44],
+  'Asia/Istanbul': [41.01, 28.95], 'Asia/Taipei': [25.04, 121.56],
+  'Asia/Kuala_Lumpur': [3.14, 101.69], 'Asia/Manila': [14.6, 120.98],
+  'Asia/Colombo': [6.93, 79.85], 'Asia/Dhaka': [23.72, 90.41],
+  'Asia/Kathmandu': [27.7, 85.32], 'Asia/Tashkent': [41.3, 69.27],
+  'Asia/Almaty': [43.26, 76.95], 'Asia/Jerusalem': [31.77, 35.22],
+  'Asia/Beirut': [33.89, 35.5], 'Asia/Baku': [40.41, 49.87],
+  'Asia/Yerevan': [40.18, 44.51], 'Asia/Tbilisi': [41.69, 44.83],
+  'Asia/Ulaanbaatar': [47.9, 106.91], 'Asia/Vladivostok': [43.12, 131.91],
+  'Asia/Irkutsk': [52.3, 104.3], 'Asia/Novosibirsk': [54.99, 82.9],
+  'Asia/Yekaterinburg': [56.83, 60.6],
+  'Europe/London': [51.51, -0.13], 'Europe/Paris': [48.85, 2.35],
+  'Europe/Berlin': [52.52, 13.41], 'Europe/Moscow': [55.75, 37.62],
+  'Europe/Rome': [41.9, 12.48], 'Europe/Madrid': [40.42, -3.7],
+  'Europe/Amsterdam': [52.37, 4.9], 'Europe/Zurich': [47.38, 8.54],
+  'Europe/Vienna': [48.21, 16.37], 'Europe/Warsaw': [52.23, 21.01],
+  'Europe/Stockholm': [59.33, 18.07], 'Europe/Oslo': [59.91, 10.75],
+  'Europe/Helsinki': [60.17, 24.94], 'Europe/Prague': [50.09, 14.42],
+  'Europe/Budapest': [47.5, 19.04], 'Europe/Athens': [37.98, 23.73],
+  'Europe/Bucharest': [44.43, 26.1], 'Europe/Kiev': [50.45, 30.52],
+  'Europe/Dublin': [53.33, -6.25], 'Europe/Lisbon': [38.72, -9.14],
+  'Europe/Brussels': [50.85, 4.35],
+  'America/New_York': [40.71, -74.01], 'America/Chicago': [41.85, -87.65],
+  'America/Denver': [39.74, -104.98], 'America/Los_Angeles': [34.05, -118.24],
+  'America/Toronto': [43.65, -79.38], 'America/Vancouver': [49.25, -123.12],
+  'America/Sao_Paulo': [-23.55, -46.63], 'America/Argentina/Buenos_Aires': [-34.6, -58.38],
+  'America/Santiago': [-33.46, -70.65], 'America/Mexico_City': [19.43, -99.13],
+  'America/Bogota': [4.71, -74.07], 'America/Lima': [-12.05, -77.04],
+  'America/Caracas': [10.48, -66.88], 'America/Havana': [23.13, -82.38],
+  'America/Anchorage': [61.22, -149.9], 'Pacific/Honolulu': [21.31, -157.86],
+  'America/Halifax': [44.65, -63.57], 'America/Montevideo': [-34.9, -56.19],
+  'Africa/Cairo': [30.06, 31.25], 'Africa/Nairobi': [-1.28, 36.82],
+  'Africa/Lagos': [6.45, 3.4], 'Africa/Johannesburg': [-26.2, 28.05],
+  'Africa/Casablanca': [33.59, -7.62], 'Africa/Accra': [5.56, -0.2],
+  'Africa/Addis_Ababa': [9.02, 38.75], 'Africa/Dar_es_Salaam': [-6.8, 39.28],
+  'Africa/Khartoum': [15.55, 32.53],
+  'Australia/Sydney': [-33.87, 151.21], 'Australia/Perth': [-31.95, 115.86],
+  'Australia/Darwin': [-12.47, 130.84],
+  'Pacific/Auckland': [-36.87, 174.77], 'Pacific/Fiji': [-18.14, 178.44],
+  'UTC': [0, 0],
+};
+
+async function fetchWeather(tzId, side) {
+  const el = document.getElementById('weatherTemp' + side);
+  const icon = document.getElementById('weatherIcon' + side);
+  if (!el) return;
+
+  const coords = TZ_COORDS[tzId];
+  if (!coords) { el.textContent = '--'; return; }
+
+  // Cache by timezone, refresh every 15 min
+  const now = Date.now();
+  const cached = weatherCache[tzId];
+  if (cached && (now - cached.ts) < 15 * 60 * 1000) {
+    el.textContent = cached.temp;
+    if (icon) icon.textContent = cached.icon;
+    return;
+  }
+
+  el.textContent = '…';
+  try {
+    const [lat, lon] = coords;
+    const resp = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&timezone=auto`
+    );
+    const data = await resp.json();
+    const temp = Math.round(data.current.temperature_2m);
+    const code = data.current.weathercode;
+    const wi = weatherIcon(code);
+    weatherCache[tzId] = { temp: temp + '°', icon: wi, ts: now };
+    el.textContent = temp + '°';
+    if (icon) icon.textContent = wi;
+  } catch(e) {
+    el.textContent = '--';
+  }
+}
+
+function weatherIcon(code) {
+  if (code === 0) return '☀️';
+  if (code <= 2) return '⛅';
+  if (code <= 3) return '☁️';
+  if (code <= 48) return '🌫️';
+  if (code <= 57) return '🌦️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '❄️';
+  if (code <= 82) return '🌧️';
+  if (code <= 86) return '🌨️';
+  if (code <= 99) return '⛈️';
+  return '🌡️';
 }
