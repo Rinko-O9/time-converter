@@ -45,9 +45,17 @@
           <input type="datetime-local" id="timeInputA" class="time-picker" />
           <button class="btn-now" onclick="setNow('A')">📍 现在</button>
         </div>
-        <div class="time-big" id="timeBigA">--:--:--</div>
-        <div class="date-line" id="dateBigA">----</div>
-        <div class="offset-chip" id="offsetA">UTC+8</div>
+        <div class="time-weather-row">
+          <div class="time-left">
+            <div class="time-big" id="timeBigA">--:--</div>
+            <div class="date-line" id="dateBigA">----</div>
+            <div class="offset-chip" id="offsetA">UTC+8</div>
+          </div>
+          <div class="weather-box">
+            <div class="weather-icon" id="weatherIconA">🌡️</div>
+            <div class="weather-temp" id="weatherTempA">--°</div>
+          </div>
+        </div>
       </div>
 
       <!-- Swap button (floats between cards) -->
@@ -76,9 +84,17 @@
           <input type="datetime-local" id="timeInputB" class="time-picker" />
           <button class="btn-now" onclick="setNow('B')">📍 现在</button>
         </div>
-        <div class="time-big" id="timeBigB">--:--:--</div>
-        <div class="date-line" id="dateBigB">----</div>
-        <div class="offset-chip" id="offsetB">UTC-4</div>
+        <div class="time-weather-row">
+          <div class="time-left">
+            <div class="time-big" id="timeBigB">--:--</div>
+            <div class="date-line" id="dateBigB">----</div>
+            <div class="offset-chip" id="offsetB">UTC-4</div>
+          </div>
+          <div class="weather-box">
+            <div class="weather-icon" id="weatherIconB">🌡️</div>
+            <div class="weather-temp" id="weatherTempB">--°</div>
+          </div>
+        </div>
       </div>
 
     </div>
